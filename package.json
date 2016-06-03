@@ -1,0 +1,22 @@
+{
+  "name": "meliza",
+  "version": "1.0.0",
+  "description": "Language learning talk-brain",
+  "main": "index.js",
+  "scripts": {
+    "test": "test"
+  },
+  "keywords": [
+    "machine-learning",
+    "nlp",
+    "chatbot"
+  ],
+  "author": "Samuel Addison",
+  "license": "ISC",
+  "dependencies": {
+    "body-parser": "^1.15.1",
+    "express": "^4.13.4",
+    "pug": "^0.1.0",
+    "twitter-node-client": "0.0.6"
+  }
+}

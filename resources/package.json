@@ -1,0 +1,13 @@
+{
+  "name": "meliza_frontend",
+  "version": "1.0.0",
+  "description": "Eats words, pukes words",
+  "main": "js/init.js",
+  "author": "samueljaddison",
+  "license": "ISC",
+  "dependencies": {
+    "angular": "^1.5.2",
+    "angular-route": "^1.5.2",
+    "chart.js": "^2.1.3"
+  }
+}
