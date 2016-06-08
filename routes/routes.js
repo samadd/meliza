@@ -19,6 +19,13 @@ function routes(app, req_handler, libs) {
             res.send({msg:msg, len: msg.length});
         }
     );
+    app.route('/say/response')
+    .get(
+        function(req, res) {
+            let msg = libs.talker.writeSentence((req.query.targetlength || 10), req.query.seed);
+            res.send({msg:msg, len:msg.length});
+        }
+    );
     app.route('/info/wordcount')
     .get(
         function(req, res) {

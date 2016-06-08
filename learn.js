@@ -98,7 +98,7 @@ function Writer(corpus) {
     function writeSentence(minLength, seedWord) {
         let sentence = [], chosenWord;
         if (seedWord) {
-            chosenWord = getRelevantWord(seedWord);
+            chosenWord = getRelevantWord(seedWord, {start:true});
         } else {
             chosenWord = chooseRandomWord(wordStarts);
         }
@@ -116,25 +116,31 @@ function Writer(corpus) {
     }
     function getRelevantWords(word) {
         let relevantWordArray = [];
-        for (let key in corpus[word].associatedWords) {
-            relevantWordArray.push({w:key,v:corpus[word].associatedWords[key]});
+        if (corpus[word]) {
+            for (let key in corpus[word].associatedWords) {
+                relevantWordArray.push({w:key,v:corpus[word].associatedWords[key]});
+            }
+            relevantWordArray.sort((a,b) => b.v - a.v);
         }
-        relevantWordArray.sort((a,b) => b.v - a.v);
+        return relevantWordArray;
     }
     function getRelevantWord(word, conditions) {
         let selection = getRelevantWords(word), selected;
         if (conditions && conditions.start) {
-            selected = selection.find(w => corpus[w].starts);
+            selected = selection.find(w => corpus[w.w].starts) || word;
         }
+        return selected.w || selected;
     }
     function chooseNextWord(word) {
         let found = false, chosenWord = "", wordMap = [];
         word = word.replace(PAUSE, '');
-        for (let key in corpus[word].validNextWords) {
-            //create weighted array for biased random selection
-            let numTimes = corpus[word].validNextWords[key];
-            for (let i = 0; i < numTimes; i++) {
-                wordMap.push(key);   
+        if (corpus[word]) {
+            for (let key in corpus[word].validNextWords) {
+                //create weighted array for biased random selection
+                let numTimes = corpus[word].validNextWords[key];
+                for (let i = 0; i < numTimes; i++) {
+                    wordMap.push(key);   
+                }
             }
         }
         //while (!found && wordMap.length) {

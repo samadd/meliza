@@ -11,12 +11,16 @@ config.controllers = {
             function getStatement(l) {
                 apiSvc.getStatement(l, sayStatement);
             }
+            function getResponse(l, w) {
+                apiSvc.getResponse(l, w, sayStatement);
+            }
             function sayStatement(s) {
                 statements.push(s);
             }
             
             $scope.statements = statements;
             $scope.getStatement = getStatement;
+            $scope.getResponse = getResponse;
         }
     ],
     statCtrl: [
@@ -49,8 +53,13 @@ config.services = {
                 $http.get('/info/wordcount')
                 .success(callback);
             }
+            function getResponse(l, word, callback) {
+                $http.get('/say/response', {params:{targetlength:l, seed:word}})
+                .success(function(data){callback(data.msg);});
+            }
             this.getStatement = getStatement;
             this.getWordCount = getWordCount;
+            this.getResponse = getResponse;
         }
     ]
 };

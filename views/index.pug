@@ -12,15 +12,17 @@ html
     body(ng-app="meliza")
         header
             h1 MELIZA Dashboard
+        div.say(ng-controller="sayCtrl")
+            div.control
+                input(type="number", ng-model="targetLength", ng-init="targetLength = 10;")
+                input(type="text", ng-model="responseWord")
+                input(type="button", value="Say Statement", ng-click="getStatement(targetLength)")
+                input(type="button", value="Respond", ng-click="getResponse(targetLength, responseWord)")
+            div.results
+                p(ng-repeat="statement in statements") {{statement}}
         div.stats(ng-controller="statCtrl")
             div.chart(ng-repeat="row in dataRows")
                 h2 {{row.title}}
                 word-chart(charttype="bar", chartdata = "row.stats")
-        div.say(ng-controller="sayCtrl")
-            div.control
-                input(type="number", ng-model="targetLength", ng-init="targetLength = 10;")
-                input(type="button", value="Say Statement", ng-click="getStatement(targetLength)")
-            div.results
-                p(ng-repeat="statement in statements") {{statement}}
     script(src="/resources/js/app.js")
             
