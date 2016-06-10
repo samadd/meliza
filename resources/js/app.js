@@ -53,8 +53,9 @@ config.services = {
                 $http.get('/info/wordcount')
                 .success(callback);
             }
-            function getResponse(l, word, callback) {
-                $http.get('/say/response', {params:{targetlength:l, seed:word}})
+            function getResponse(l, words, callback) {
+                var seed = words.split(' ').map(function(w){return w.toLowerCase();});
+                $http.get('/say/response', {params:{targetlength:l, seed:seed}})
                 .success(function(data){callback(data.msg);});
             }
             this.getStatement = getStatement;

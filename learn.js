@@ -96,16 +96,17 @@ function Writer(corpus) {
         }
     }
     function writeSentence(minLength, seedWord) {
-        let sentence = [], chosenWord;
+        let sentence = [], chosenWord, seedList;
         if (seedWord) {
             chosenWord = getRelevantWord(seedWord, {start:true});
+            seedList = getRelevantWords(seedWord);
         } else {
             chosenWord = chooseRandomWord(wordStarts);
         }
-        
+        console.log(seedList);
         sentence.push(chosenWord);
         while (sentence.length <= minLength || (sentence.length >= minLength && wordEnds.indexOf(chosenWord) === -1)) {
-            chosenWord = chooseNextWord(chosenWord);
+            chosenWord = chooseNextWord(chosenWord, seedList);
             sentence.push(chosenWord);
         } 
         return sentence.reduce((p,c,i,a) => {return p + c + ((i < a.length-1) ? " " : ".");}, "");
@@ -114,35 +115,45 @@ function Writer(corpus) {
         let rndPoint = Math.floor( Math.random() * wordRange.length);
         return wordRange[rndPoint];
     }
-    function getRelevantWords(word) {
-        let relevantWordArray = [];
-        if (corpus[word]) {
-            for (let key in corpus[word].associatedWords) {
-                relevantWordArray.push({w:key,v:corpus[word].associatedWords[key]});
+    function getRelevantWords(seed) {
+        let relevantWordArray = [], weightedRelevantWordArray, words;
+        words = Array.isArray(seed) ? seed : [seed];
+        words.forEach(
+            (word) => {
+                if (corpus[word]) {
+                    for (let key in corpus[word].associatedWords) {
+                        relevantWordArray.push({w:key,v:corpus[word].associatedWords[key]});
+                    }
+                    //relevantWordArray.sort((a,b) => b.v - a.v);
+                }                
             }
-            relevantWordArray.sort((a,b) => b.v - a.v);
-        }
-        return relevantWordArray;
+        );
+        weightedRelevantWordArray = relevantWordArray.reduce((p,c)=>{pushWeightedArray(p,c.w,c.v); return p;},[]);
+        return weightedRelevantWordArray;
     }
     function getRelevantWord(word, conditions) {
-        let selection = getRelevantWords(word), selected;
+        let selection = getRelevantWords(word), selected, canStartWords;
         if (conditions && conditions.start) {
-            selected = selection.find(w => corpus[w.w].starts) || word;
+            canStartWords = selection.filter(w => corpus[w].starts);
+            selected = canStartWords.length ? chooseRandomWord(canStartWords) : word;
+        } else {
+            selected = selection.length ? chooseRandomWord(selection) : word;
         }
-        return selected.w || selected;
+        return selected;
     }
-    function chooseNextWord(word) {
+    function chooseNextWord(word, seedList) {
         let found = false, chosenWord = "", wordMap = [];
+        seedList = seedList || [];
         word = word.replace(PAUSE, '');
         if (corpus[word]) {
             for (let key in corpus[word].validNextWords) {
                 //create weighted array for biased random selection
                 let numTimes = corpus[word].validNextWords[key];
-                for (let i = 0; i < numTimes; i++) {
-                    wordMap.push(key);   
+                if (seedList.indexOf(key) || !seedList.length) {
+                    pushWeightedArray(wordMap, key, numTimes);
                 }
             }
-        }
+        } console.log(wordMap.length ? 'true' : 'false' ); console.log(wordMap);
         //while (!found && wordMap.length) {
             chosenWord = wordMap.length ? chooseRandomWord(wordMap) : PAUSE + chooseRandomWord(wordStarts);
             //found = corpus[word].validNextWords[chosenWord] ? true : false;
@@ -150,6 +161,13 @@ function Writer(corpus) {
         return chosenWord;
     }
     this.writeSentence = writeSentence;
+}
+
+function pushWeightedArray(arr,key,val) {
+    for (let i = 0; i < val; i++) {
+        arr.push(key);
+    }
+    return arr;
 }
 
 function wordCount(corpus) {
