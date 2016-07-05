@@ -7,13 +7,13 @@ function Word(word) {
     this.instances = 0;
     this.associatedWords = {};
     this.validNextWords = {};
-    this.startPunctuation = [];
-    this.endPunctuation = [];
     this.starts = 0;
     this.ends = 0;
 }
 
 function Reader(corpus) {
+    
+    corpus.$noiseWords = [];
     
     function getSentences(block) {
         let sentences = [];
@@ -31,7 +31,7 @@ function Reader(corpus) {
                         //const notwrd = /[^a-zA-Z0-9-]+/g;
                         //let wrd = w.replace(notwrd, '').trim();
                         //let nxtWrd = (i < a.length-1) ? a[i+1].replace(notwrd, '').trim() : null;
-                        let wrd = w.trim();
+                        let wrd = sanitizeWord(w);
                         let nxtWrd = (i < a.length-1) ? a[i+1].trim() : null;
                         let word = corpus[wrd] ? corpus[wrd] : new Word(wrd);
                         word.instances++;
@@ -56,14 +56,19 @@ function Reader(corpus) {
         if (wC.length < 60) {
             return;
         }
-        let threshold = wC[wC.length - 50].count; console.log(threshold);
+        let threshold = wC[wC.length - 45].count; console.log(threshold);
         
         sentences.forEach(
             /* find word associations - words with frequency below certain threshold in same sentence (and surrounding?) */
             (s,si,sa) => {
                 s.forEach(
                     (w,wi,wa) => {
-                        if (corpus[w].instances >= threshold) {return;}
+                        if (corpus[w].instances >= threshold) {
+                            if (corpus.$noiseWords.indexOf(w) === -1) {
+                                corpus.$noiseWords.push(w);
+                            }
+                            return;
+                        }
                         for (let i = 0; i<wa.length;i++) {
                             if (wa[i]!==w) {
                                 if (corpus[wa[i]].instances < threshold) {
@@ -103,7 +108,7 @@ function Writer(corpus) {
         } else {
             chosenWord = chooseRandomWord(wordStarts);
         }
-        console.log(seedList);
+        //console.log(seedList);
         sentence.push(chosenWord);
         while (sentence.length <= minLength || (sentence.length >= minLength && wordEnds.indexOf(chosenWord) === -1)) {
             chosenWord = chooseNextWord(chosenWord, seedList);
@@ -118,6 +123,7 @@ function Writer(corpus) {
     function getRelevantWords(seed) {
         let relevantWordArray = [], weightedRelevantWordArray, words;
         words = Array.isArray(seed) ? seed : [seed];
+        words = words.map((w) => sanitizeWord(w));
         words.forEach(
             (word) => {
                 if (corpus[word]) {
@@ -126,6 +132,11 @@ function Writer(corpus) {
                     }
                     //relevantWordArray.sort((a,b) => b.v - a.v);
                 }                
+            }
+        );
+        corpus.$noiseWords.forEach(
+            w => {
+                relevantWordArray.push({w:w, v: corpus[w].instances});   
             }
         );
         weightedRelevantWordArray = relevantWordArray.reduce((p,c)=>{pushWeightedArray(p,c.w,c.v); return p;},[]);
@@ -153,7 +164,7 @@ function Writer(corpus) {
                     pushWeightedArray(wordMap, key, numTimes);
                 }
             }
-        } console.log(wordMap.length ? 'true' : 'false' ); console.log(wordMap);
+        } console.log(wordMap.length ? 'true' : 'false' ); 
         //while (!found && wordMap.length) {
             chosenWord = wordMap.length ? chooseRandomWord(wordMap) : PAUSE + chooseRandomWord(wordStarts);
             //found = corpus[word].validNextWords[chosenWord] ? true : false;
@@ -168,6 +179,10 @@ function pushWeightedArray(arr,key,val) {
         arr.push(key);
     }
     return arr;
+}
+
+function sanitizeWord(word) {
+    return word.replace(/(\s[^a-zA-Z0-9]|[^a-zA-Z0-9]\s)+g/, "").trim().toLowerCase();
 }
 
 function wordCount(corpus) {

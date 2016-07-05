@@ -9,7 +9,7 @@ const express = require('express');
 let BrainMaker = require('./learn.js'),
     brain = BrainMaker();
 
-let trainingText = fs.readFileSync('./trainingtext/wings.txt', 'utf-8');
+let trainingText = fs.readFileSync('./trainingtext/tonyblair.txt', 'utf-8');
 brain.reader.learn(trainingText);
 let talker = brain.Writer();
 
