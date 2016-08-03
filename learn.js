@@ -101,8 +101,8 @@ function Reader(corpus) {
                 }
                 for (let i = roughWords.length-1; i>=0; i--) {
                     if (roughWords[i].match(sBoundary)) {
-                        let startWord = sanitizeWord(roughWords[i+1]);
-                        if (corpus.$questionWords.start.indexOf(startWord) ==-1) {
+                        let startWord = i===roughWords.length-1 ? sanitizeWord(roughWords[i]) : sanitizeWord(roughWords[i+1]);
+                        if (corpus.$questionWords.start.indexOf(startWord) === -1) {
                             corpus.$questionWords.start.push(startWord);
                         }
                         break;
