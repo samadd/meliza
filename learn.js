@@ -14,10 +14,11 @@ function Word(word) {
 function Reader(corpus) {
     
     corpus.$noiseWords = [];
+    corpus.$questionWords = {start:[], end:[]};
     
     function getSentences(block) {
         let sentences = [];
-        block.split('.').forEach(sentence => sentences.push(extractWords(sentence)));
+        block.split(/[!.?]/g).forEach(sentence => sentences.push(extractWords(sentence)));
         return sentences;
     }
     function extractWords(sentence) {
@@ -53,6 +54,7 @@ function Reader(corpus) {
             }
         );
     }
+    
     function associateWords(sentences) {
         let wC = wordCount(corpus);
         if (wC.length < 60) {
@@ -64,7 +66,7 @@ function Reader(corpus) {
             /* find word associations - words with frequency below certain threshold in same sentence (and surrounding?) */
             (s,si,sa) => {
                 s.forEach(
-                    (w,wi,wa) => {;
+                    (w,wi,wa) => {
                         if (corpus[w].instances >= threshold) {
                             if (corpus.$noiseWords.indexOf(w) === -1) {
                                 corpus.$noiseWords.push(w);
@@ -83,18 +85,45 @@ function Reader(corpus) {
             }
         );
     }
+    
+    function findQuestions(block) {
+        let questionEnds = block.split('?');
+        if (questionEnds.length === 1) { //no questions
+            return;
+        }
+        questionEnds.forEach(
+            q => {
+                let roughWords = q.split(' '),
+                    endWord = sanitizeWord(roughWords[roughWords.length-1]),
+                    sBoundary = /[!.?]/;
+                if (endWord && corpus.$questionWords.end.indexOf(endWord) === -1) {
+                    corpus.$questionWords.end.push(endWord);
+                }
+                for (let i = roughWords.length-1; i>=0; i--) {
+                    if (roughWords[i].match(sBoundary)) {
+                        let startWord = sanitizeWord(roughWords[i+1]);
+                        if (corpus.$questionWords.start.indexOf(startWord) ==-1) {
+                            corpus.$questionWords.start.push(startWord);
+                        }
+                        break;
+                    }
+                }
+            }
+        );
+    }
+    
     this.learn = (block) => {
         let sentences = getSentences(block);
         analyzeWords(sentences);
         associateWords(sentences);
+        findQuestions(block);
     };
 }
 
 function Writer(corpus) {
-    const PAUSE = "; ";
-    let wordMap = [], wordStarts = [], wordEnds = [];
+    const PAUSE = "- ";
+    let wordStarts = [], wordEnds = [];
     for (let key in corpus) {
-        wordMap.push(key);
         if (corpus[key].starts) {
             wordStarts.push(key);
         }
@@ -103,20 +132,20 @@ function Writer(corpus) {
         }
     }
     function writeSentence(minLength, seedWord) {
-        let sentence = [], chosenWord, seedList;
+        let sentence = [], chosenWord, seedList, endPunctuation;
         if (seedWord) {
             chosenWord = getRelevantWord(seedWord, {start:true});
             seedList = getRelevantWords(seedWord);
         } else {
             chosenWord = chooseRandomWord(wordStarts);
         }
-        //console.log(seedList);
         sentence.push(chosenWord);
         while (sentence.length <= minLength || (sentence.length >= minLength && wordEnds.indexOf(chosenWord) === -1)) {
             chosenWord = chooseNextWord(chosenWord, seedList);
             sentence.push(chosenWord);
-        } 
-        return sentence.reduce((p,c,i,a) => {return p + c + ((i < a.length-1) ? " " : ".");}, "");
+        }
+        endPunctuation = (corpus.$questionWords.start.indexOf(sentence[0]) > -1 && corpus.$questionWords.end.indexOf(sentence[sentence.length-1]) > -1) ? '?' : '.';
+        return sentence.reduce((p,c,i,a) => {return p + c + ((i < a.length-1) ? " " : endPunctuation);}, "");
     }
     function chooseRandomWord(wordRange) {
         let rndPoint = Math.floor( Math.random() * wordRange.length);
@@ -166,11 +195,8 @@ function Writer(corpus) {
                     pushWeightedArray(wordMap, key, numTimes);
                 }
             }
-        } /*console.log(wordMap.length ? 'true' : 'false' );*/ 
-        //while (!found && wordMap.length) {
-            chosenWord = wordMap.length ? chooseRandomWord(wordMap) : PAUSE + chooseRandomWord(wordStarts);
-            //found = corpus[word].validNextWords[chosenWord] ? true : false;
-        //}
+        }
+        chosenWord = wordMap.length ? chooseRandomWord(wordMap) : PAUSE + chooseRandomWord(wordStarts);
         return chosenWord;
     }
     this.writeSentence = writeSentence;
